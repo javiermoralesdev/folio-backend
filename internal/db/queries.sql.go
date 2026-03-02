@@ -9,6 +9,36 @@ import (
 	"context"
 )
 
+const createBook = `-- name: CreateBook :one
+INSERT INTO books (id, title, author, path)
+VALUES (?, ?, ?, ?)
+RETURNING id, title, author, path
+`
+
+type CreateBookParams struct {
+	ID     string
+	Title  string
+	Author string
+	Path   string
+}
+
+func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, error) {
+	row := q.db.QueryRowContext(ctx, createBook,
+		arg.ID,
+		arg.Title,
+		arg.Author,
+		arg.Path,
+	)
+	var i Book
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Author,
+		&i.Path,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, username, password)
 VALUES (?, ?, ?)
@@ -28,14 +58,123 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users
+const deleteBookmark = `-- name: DeleteBookmark :exec
+DELETE FROM bookmarks
+WHERE user_id = ? AND book_id = ?
+`
+
+type DeleteBookmarkParams struct {
+	UserID string
+	BookID string
+}
+
+func (q *Queries) DeleteBookmark(ctx context.Context, arg DeleteBookmarkParams) error {
+	_, err := q.db.ExecContext(ctx, deleteBookmark, arg.UserID, arg.BookID)
+	return err
+}
+
+const getBookByID = `-- name: GetBookByID :one
+SELECT id, title, author, path FROM books
 WHERE id = ?
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteUser, id)
-	return err
+func (q *Queries) GetBookByID(ctx context.Context, id string) (Book, error) {
+	row := q.db.QueryRowContext(ctx, getBookByID, id)
+	var i Book
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Author,
+		&i.Path,
+	)
+	return i, err
+}
+
+const getBookmark = `-- name: GetBookmark :one
+SELECT id, user_id, book_id, page FROM bookmarks
+WHERE user_id = ? AND book_id = ?
+`
+
+type GetBookmarkParams struct {
+	UserID string
+	BookID string
+}
+
+func (q *Queries) GetBookmark(ctx context.Context, arg GetBookmarkParams) (Bookmark, error) {
+	row := q.db.QueryRowContext(ctx, getBookmark, arg.UserID, arg.BookID)
+	var i Bookmark
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.BookID,
+		&i.Page,
+	)
+	return i, err
+}
+
+const getBooks = `-- name: GetBooks :many
+SELECT id, title, author, path FROM books
+`
+
+func (q *Queries) GetBooks(ctx context.Context) ([]Book, error) {
+	rows, err := q.db.QueryContext(ctx, getBooks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Book
+	for rows.Next() {
+		var i Book
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Author,
+			&i.Path,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUserBookmarks = `-- name: GetUserBookmarks :many
+SELECT id, user_id, book_id, page FROM bookmarks
+WHERE user_id = ?
+`
+
+func (q *Queries) GetUserBookmarks(ctx context.Context, userID string) ([]Bookmark, error) {
+	rows, err := q.db.QueryContext(ctx, getUserBookmarks, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Bookmark
+	for rows.Next() {
+		var i Bookmark
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.BookID,
+			&i.Page,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUserByID = `-- name: GetUserByID :one
@@ -59,5 +198,36 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 	row := q.db.QueryRowContext(ctx, getUserByUsername, username)
 	var i User
 	err := row.Scan(&i.ID, &i.Username, &i.Password)
+	return i, err
+}
+
+const upsertBookmark = `-- name: UpsertBookmark :one
+INSERT INTO bookmarks (id, user_id, book_id, page)
+VALUES (?, ?, ?, ?)
+ON CONFLICT(user_id, book_id) DO UPDATE SET page = excluded.page
+RETURNING id, user_id, book_id, page
+`
+
+type UpsertBookmarkParams struct {
+	ID     string
+	UserID string
+	BookID string
+	Page   int64
+}
+
+func (q *Queries) UpsertBookmark(ctx context.Context, arg UpsertBookmarkParams) (Bookmark, error) {
+	row := q.db.QueryRowContext(ctx, upsertBookmark,
+		arg.ID,
+		arg.UserID,
+		arg.BookID,
+		arg.Page,
+	)
+	var i Bookmark
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.BookID,
+		&i.Page,
+	)
 	return i, err
 }

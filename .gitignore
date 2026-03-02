@@ -3,7 +3,11 @@
 #
 # Binaries for programs and plugins
 
+books
+folio-backend
 *.db
+*.epub
+*.pdf
 
 *.exe
 *.exe~

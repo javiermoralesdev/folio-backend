@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -10,14 +9,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/google/uuid"
 	"github.com/javiermoralesdev/folio-backend/internal/db"
-
+	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
 )
 
 func main() {
-	conn, err := sql.Open("sqlite", "./users.db")
+
+	godotenv.Load()
+	dbPath := get_database_file()
+
+	//booksPath := get_books_directory()
+	conn, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		fmt.Println(err.Error())
 		log.Fatal("Error opening database!")
@@ -34,30 +37,23 @@ func main() {
 	queries := db.New(conn)
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Post("/users/create", func(w http.ResponseWriter, r *http.Request) {
-		id := uuid.New().String()
-		_, err := queries.CreateUser(context.Background(), db.CreateUserParams{
-			ID:       id, // your uuid
-			Username: "john",
-			Password: "hashedPassword",
-		})
-		if err != nil {
-			fmt.Println(err.Error())
-			log.Fatal("Error creating user")
-		}
-		w.Write([]byte(id))
+
+	r.Post("/login", Login(queries))
+	r.Post("/users/create", CreateUser(queries))
+
+	r.Group(func(r chi.Router) {
+		r.Use(AuthMiddleware)
+		r.Get("/books", GetBooks(queries))
+		r.Get("/books/{id}", GetBook(queries))
+		r.Get("/books/{id}/file", ServeBook(queries))
+		r.Post("/books/upload", UploadBook(queries))
+		r.Delete("/books/{id}", DeleteBook(queries))
+
+		r.Post("/bookmarks", UpsertBookmark(queries))
+		r.Get("/bookmarks", GetUserBookmarks(queries))
+		r.Get("/bookmarks/{bookId}", GetBookmark(queries))
+		r.Delete("/bookmarks/{bookId}", DeleteBookmark(queries))
 	})
 
-	r.Get("/users/{id}", func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
-		user, err := queries.GetUserByID(context.Background(), id)
-		if err != nil {
-			fmt.Println(err.Error())
-			w.WriteHeader(404)
-		}
-
-		w.Write([]byte("My name is " + user.Username))
-
-	})
 	http.ListenAndServe(":1323", r)
 }

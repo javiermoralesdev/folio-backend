@@ -4,6 +4,20 @@
 
 package db
 
+type Book struct {
+	ID     string
+	Title  string
+	Author string
+	Path   string
+}
+
+type Bookmark struct {
+	ID     string
+	UserID string
+	BookID string
+	Page   int64
+}
+
 type User struct {
 	ID       string
 	Username string
