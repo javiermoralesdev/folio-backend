@@ -23,7 +23,9 @@ INSERT INTO books (id, title, author, path)
 VALUES (?, ?, ?, ?)
 RETURNING *;
 
-
+-- name: DeleteBook :exec
+DELETE FROM books
+WHERE id = ?;
 
 -- name: UpsertBookmark :one
 INSERT INTO bookmarks (id, user_id, book_id, page)

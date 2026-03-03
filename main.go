@@ -47,12 +47,12 @@ func main() {
 		r.Get("/books/{id}", GetBook(queries))
 		r.Get("/books/{id}/file", ServeBook(queries))
 		r.Post("/books/upload", UploadBook(queries))
-		r.Delete("/books/{id}", DeleteBook(queries))
+		r.Delete("/books/{id}", DeleteBook(queries)) // TODO
 
-		r.Post("/bookmarks", UpsertBookmark(queries))
-		r.Get("/bookmarks", GetUserBookmarks(queries))
-		r.Get("/bookmarks/{bookId}", GetBookmark(queries))
-		r.Delete("/bookmarks/{bookId}", DeleteBookmark(queries))
+		r.Post("/bookmarks", UpsertBookmark(queries))            //TODO
+		r.Get("/bookmarks", GetUserBookmarks(queries))           //TODO
+		r.Get("/bookmarks/{bookId}", GetBookmark(queries))       //TODO
+		r.Delete("/bookmarks/{bookId}", DeleteBookmark(queries)) //TODO
 	})
 
 	http.ListenAndServe(":1323", r)

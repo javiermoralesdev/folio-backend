@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -74,6 +75,33 @@ func CreateUser(queries *db.Queries) http.HandlerFunc {
 
 func Login(queries *db.Queries) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}
+		json.NewDecoder(r.Body).Decode(&body)
 
+		user, err := queries.GetUserByUsername(context.Background(), body.Username)
+		if err != nil {
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
+		if err != nil {
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+
+		// create token
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"user_id": user.ID,
+			"exp":     time.Now().Add(30 * 7 * 24 * time.Hour).Unix(),
+		})
+
+		tokenString, _ := token.SignedString(get_jwt_secret())
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 	}
 }

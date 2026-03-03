@@ -7,8 +7,8 @@ func get_database_file() string {
 	return x
 }
 
-func get_jwt_secret() string {
-	return os.Getenv("JWT_SECRET")
+func get_jwt_secret() []byte {
+	return []byte(os.Getenv("JWT_SECRET"))
 }
 
 func get_books_directory() string {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -83,18 +84,44 @@ func ServeBook(queries *db.Queries) http.HandlerFunc {
 
 func GetBook(queries *db.Queries) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		id := chi.URLParam(r, "id")
+		book, err := queries.GetBookByID(context.Background(), id)
+		if err != nil {
+			http.Error(w, "The book does not exist", http.StatusBadRequest)
+			return
+		}
+		json.NewEncoder(w).Encode(book)
 	}
 }
 
 func GetBooks(queries *db.Queries) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		books, err := queries.GetBooks(context.Background())
+		if err != nil {
+			http.Error(w, "Error fetching books", http.StatusInternalServerError)
+		}
 
+		if books == nil {
+			books = []db.Book{}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(books)
 	}
 }
 
 func DeleteBook(queries *db.Queries) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		id := chi.URLParam(r, "id")
+		book, err := queries.GetBookByID(context.Background(), id)
+		if err != nil {
+			http.Error(w, "The book does not exist", http.StatusBadRequest)
+			return
+		}
+		errFile := os.Remove(book.Path)
+		err = queries.DeleteBook(context.Background(), id)
+		if err != nil || errFile != nil {
+			http.Error(w, "Failed to delete specified book", http.StatusInternalServerError)
+			return
+		}
 	}
 }
