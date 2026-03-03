@@ -1,3 +1,7 @@
+-- ============
+-- USERS
+-- ============
+
 -- name: CreateUser :one
 INSERT INTO users (id, username, password)
 VALUES (?, ?, ?)
@@ -11,21 +15,29 @@ WHERE id = ?;
 SELECT * FROM users
 WHERE username = ?;
 
--- name: GetBookByID :one
-SELECT * FROM books
-WHERE id = ?;
-
--- name: GetBooks :many
-SELECT * FROM books;
+-- ============
+-- BOOKS
+-- ============
 
 -- name: CreateBook :one
 INSERT INTO books (id, title, author, path)
 VALUES (?, ?, ?, ?)
 RETURNING *;
 
+-- name: GetBooks :many
+SELECT * FROM books;
+
+-- name: GetBookByID :one
+SELECT * FROM books
+WHERE id = ?;
+
 -- name: DeleteBook :exec
 DELETE FROM books
 WHERE id = ?;
+
+-- ============
+-- BOOKMARKS
+-- ============
 
 -- name: UpsertBookmark :one
 INSERT INTO bookmarks (id, user_id, book_id, page)

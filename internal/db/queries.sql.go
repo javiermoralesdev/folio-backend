@@ -10,6 +10,7 @@ import (
 )
 
 const createBook = `-- name: CreateBook :one
+
 INSERT INTO books (id, title, author, path)
 VALUES (?, ?, ?, ?)
 RETURNING id, title, author, path
@@ -22,6 +23,9 @@ type CreateBookParams struct {
 	Path   string
 }
 
+// ============
+// BOOKS
+// ============
 func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, error) {
 	row := q.db.QueryRowContext(ctx, createBook,
 		arg.ID,
@@ -40,6 +44,7 @@ func (q *Queries) CreateBook(ctx context.Context, arg CreateBookParams) (Book, e
 }
 
 const createUser = `-- name: CreateUser :one
+
 INSERT INTO users (id, username, password)
 VALUES (?, ?, ?)
 RETURNING id, username, password
@@ -51,6 +56,9 @@ type CreateUserParams struct {
 	Password string
 }
 
+// ============
+// USERS
+// ============
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.ID, arg.Username, arg.Password)
 	var i User
@@ -212,6 +220,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const upsertBookmark = `-- name: UpsertBookmark :one
+
 INSERT INTO bookmarks (id, user_id, book_id, page)
 VALUES (?, ?, ?, ?)
 ON CONFLICT(user_id, book_id) DO UPDATE SET page = excluded.page
@@ -225,6 +234,9 @@ type UpsertBookmarkParams struct {
 	Page   int64
 }
 
+// ============
+// BOOKMARKS
+// ============
 func (q *Queries) UpsertBookmark(ctx context.Context, arg UpsertBookmarkParams) (Bookmark, error) {
 	row := q.db.QueryRowContext(ctx, upsertBookmark,
 		arg.ID,
