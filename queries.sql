@@ -39,11 +39,10 @@ WHERE id = ?;
 -- BOOKMARKS
 -- ============
 
--- name: UpsertBookmark :one
+-- name: UpsertBookmark :exec
 INSERT INTO bookmarks (id, user_id, book_id, page)
 VALUES (?, ?, ?, ?)
-ON CONFLICT(user_id, book_id) DO UPDATE SET page = excluded.page
-RETURNING *;
+ON CONFLICT(user_id, book_id) DO UPDATE SET page = excluded.page;
 
 -- name: GetBookmark :one
 SELECT * FROM bookmarks

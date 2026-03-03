@@ -219,12 +219,11 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 	return i, err
 }
 
-const upsertBookmark = `-- name: UpsertBookmark :one
+const upsertBookmark = `-- name: UpsertBookmark :exec
 
 INSERT INTO bookmarks (id, user_id, book_id, page)
 VALUES (?, ?, ?, ?)
 ON CONFLICT(user_id, book_id) DO UPDATE SET page = excluded.page
-RETURNING id, user_id, book_id, page
 `
 
 type UpsertBookmarkParams struct {
@@ -237,19 +236,12 @@ type UpsertBookmarkParams struct {
 // ============
 // BOOKMARKS
 // ============
-func (q *Queries) UpsertBookmark(ctx context.Context, arg UpsertBookmarkParams) (Bookmark, error) {
-	row := q.db.QueryRowContext(ctx, upsertBookmark,
+func (q *Queries) UpsertBookmark(ctx context.Context, arg UpsertBookmarkParams) error {
+	_, err := q.db.ExecContext(ctx, upsertBookmark,
 		arg.ID,
 		arg.UserID,
 		arg.BookID,
 		arg.Page,
 	)
-	var i Bookmark
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.BookID,
-		&i.Page,
-	)
-	return i, err
+	return err
 }
